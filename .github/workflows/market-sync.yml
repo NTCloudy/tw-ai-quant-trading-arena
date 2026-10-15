@@ -1,0 +1,73 @@
+name: TWSE Market Sync & Deploy Arena
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    # Weekly Monday Auto-Refresh: Re-scans external Taiwan stock universe & locks in new Weekly Top 5 Promising Taiwan Stocks every Monday (00:30 UTC / 08:30 Taiwan Time)
+    - cron: '30 0 * * 1'
+    # Daily TWSE Market Close Sync: Updates real Yahoo Finance .TW OHLCV quotes & 3 AI Traders ledger every Taiwan trading day (06:15 UTC / 14:15 Taiwan Time)
+    - cron: '15 6 * * 1-5'
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: 'pages-and-market-sync'
+  cancel-in-progress: true
+
+jobs:
+  sync-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Sync real TWSE market data from Yahoo Finance
+        run: npm run sync:market
+
+      - name: Run quantitative & accounting invariant tests
+        run: npm test
+
+      - name: Commit updated market snapshot on scheduled/manual sync
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/market-snapshot.json data/sync-history.json data/weekly-top5-discovery.json
+          if ! git diff --staged --quiet; then
+            git commit -m "chore(twse): auto-sync real Yahoo Finance .TW OHLCV & 3 AI traders ledger [skip ci]"
+            git push origin HEAD:main
+          fi
+
+      - name: Build static Quant Terminal site
+        run: npm run build
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./_site
+
+  deploy:
+    needs: sync-and-build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

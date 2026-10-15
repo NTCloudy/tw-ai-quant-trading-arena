@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TW AI Quant Trading Arena — 3 位 AI 操盤手真實台股（台積電、鴻海、聯發科、DRAM、AI 伺服器、0050）模擬交易戰情室</title>
+  <meta
+    name="description"
+    content="串接 Yahoo Finance 真實台灣股市 (2330 台積電, 2317 鴻海, 2454 聯發科, 2382 廣達, 2308 台達電, 3017 奇鋐, 3231 緯創, 2408 南亞科 DRAM, 2344 華邦電 DRAM, 3008 大立光, 2603 長榮, 2881 富邦金, 0050, 0056) 歷史與每日收盤報價，由 3 位量化 AI 操盤手自動判斷進場與退場點位並追蹤新台幣報酬率。"
+  />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <!-- Top Real-Market Ticker Tape -->
+  <div class="ticker-bar" aria-label="Real-time Taiwan stock quotes">
+    <div class="ticker-badge">
+      <span class="pulse-dot"></span>
+      <span data-i18n="tickerLiveBadge">TWSE REAL MARKET FEED (14 台股核心標的 · YAHOO FINANCE .TW)</span>
+    </div>
+    <div class="ticker-track-wrap">
+      <div class="ticker-track" id="ticker-tape"></div>
+    </div>
+    <div class="ticker-sync-meta" id="market-sync-timestamp"></div>
+  </div>
+
+  <!-- Main Terminal Container -->
+  <div class="terminal-shell">
+    <!-- Terminal Header -->
+    <header class="terminal-header">
+      <div class="brand-block">
+        <div class="brand-eyebrow">
+          <span class="eyebrow-tag">TAIWAN STOCK EXCHANGE (TWSE) AI PAPER TRADING TERMINAL</span>
+          <span class="eyebrow-sep">·</span>
+          <span class="eyebrow-sub" id="arena-date-range-badge">載入台股真實行情中...</span>
+        </div>
+        <h1 class="brand-title" data-i18n="appTitle">
+          台股 AI 量化模擬交易競技場 <span class="title-accent">TWSE 3 AI Traders Arena</span>
+        </h1>
+        <p class="brand-subtitle" data-i18n="appSubtitle">
+          100% 同步台灣證交所真實收盤股價（2330 台積電、2317 鴻海、2454 聯發科、2382 廣達、2408 南亞科 DRAM、0050 等）· 3 位 AI 操盤手全自動執行買進／賣出 · 每週一自動更新清單外 Top 5 潛力台股
+        </p>
+      </div>
+
+      <div class="header-actions">
+        <button type="button" class="btn-terminal btn-sync" id="btn-open-sync-modal">
+          <span class="btn-icon">⚡</span>
+          <span data-i18n="btnSyncMarket">同步最新台股收盤價 (Auto Cron)</span>
+        </button>
+        <button type="button" class="btn-terminal btn-lang" id="btn-lang-toggle">
+          EN / 繁中
+        </button>
+        <a
+          href="https://github.com/NTCloudy/tw-ai-quant-trading-arena"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="btn-terminal btn-github"
+        >
+          GitHub Repo ↗
+        </a>
+      </div>
+    </header>
+
+    <!-- Simulation Parameter Control Bar -->
+    <section class="control-deck" aria-label="Simulation Controls">
+      <div class="control-group">
+        <label class="control-label" data-i18n="lblPeriod">⏱️ 追蹤／回測時間區間 (Time Horizon)</label>
+        <div class="segmented-pills" id="period-pills">
+          <button type="button" class="seg-pill active" data-period="22">1 個月 (30D)</button>
+          <button type="button" class="seg-pill" data-period="44">2 個月 (60D)</button>
+          <button type="button" class="seg-pill" data-period="63">3 個月 (90D)</button>
+          <button type="button" class="seg-pill" data-period="126">半年 (180D)</button>
+          <button type="button" class="seg-pill" data-period="251">1 年 (365D)</button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label class="control-label" data-i18n="lblCapital">💰 初始虛擬本金 (新台幣 NT$ TWD)</label>
+        <select id="select-capital" class="terminal-select">
+          <option value="300000">NT$ 300,000 (30萬小資族部位)</option>
+          <option value="1000000" selected>NT$ 1,000,000 (100萬標準台股部位)</option>
+          <option value="3000000">NT$ 3,000,000 (300萬波段主力部位)</option>
+          <option value="10000000">NT$ 10,000,000 (1,000萬中實戶部位)</option>
+          <option value="50000000">NT$ 50,000,000 (5,000萬法人大戶部位)</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label class="control-label" data-i18n="lblMarketFilter">🇹🇼 台股產業板塊範圍 (TWSE Sector Filter)</label>
+        <select id="select-market-filter" class="terminal-select">
+          <option value="all" selected>全台股 14 檔核心池 (半導體/DRAM + AI伺服器 + 航運金控 + 0050)</option>
+          <option value="tw-semi">半導體、IC 設計、光學與 DRAM 記憶體 (2330/2454/2408/2344/3008)</option>
+          <option value="tw-ai">AI 伺服器、電源與水冷散熱族群 (2317/2382/2308/3017/3231)</option>
+          <option value="tw-value">高殖利率航運、金控與國民 ETF (2603/2881/0050/0056)</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label class="control-label" data-i18n="lblFeeRate">⚖️ 台股手續費與證交稅摩擦 (Fee + Tax)</label>
+        <select id="select-fee-rate" class="terminal-select">
+          <option value="0.0022" selected>0.22% 台股電子下單手續費折讓＋0.3%證交稅均攤</option>
+          <option value="0.0014">0.14% 證交稅減半／低摩擦環境</option>
+          <option value="0">0.00% 零手續費理想環境</option>
+        </select>
+      </div>
+    </section>
+
+    <!-- Custom Ticker Watchlist / Portfolio Simulator Bar -->
+    <section class="watchlist-deck" id="custom-watchlist-section" aria-label="Custom Ticker Watchlist">
+      <div class="watchlist-deck-header">
+        <div class="watchlist-title-wrap">
+          <span class="watchlist-title">🎛️ 自訂台股投資組合標的池（跟單模擬器 — 點擊自由勾選想讓 AI 操盤的台股權值股／DRAM／AI 伺服器）</span>
+          <span class="watchlist-count-badge" id="watchlist-active-count">已啟用 14 / 14 檔台股</span>
+        </div>
+        <div class="watchlist-presets" id="watchlist-preset-btns">
+          <button type="button" class="preset-chip active" data-preset="all">🌐 全選 14 檔台股</button>
+          <button type="button" class="preset-chip" data-preset="semi-dram">🔥 晶圓代工與 DRAM 記憶體 (2330 / 2454 / 2408 / 2344)</button>
+          <button type="button" class="preset-chip" data-preset="ai-server">🖥️ AI 伺服器與水冷散熱五雄 (2317 / 2382 / 2308 / 3017 / 3231)</button>
+          <button type="button" class="preset-chip" data-preset="high-yield">💰 高股息航運金控與國民 ETF (2603 / 2881 / 0050 / 0056)</button>
+        </div>
+      </div>
+      <div class="watchlist-chips-row" id="custom-watchlist-chips"></div>
+    </section>
+
+    <!-- Executive AI Daily Portfolio Briefing -->
+    <section class="briefing-banner" id="daily-briefing-section" aria-label="AI Daily Portfolio Briefing">
+      <div class="briefing-header">
+        <div class="briefing-title-group">
+          <span class="briefing-live-pill">📰 台股 AI 每日盤後投顧總結快報 (TWSE DAILY BRIEFING)</span>
+          <span class="briefing-date mono" id="briefing-date-label"></span>
+        </div>
+        <span class="briefing-hint">自動彙整 3 位 AI 操盤手近一週台股買賣動向、每週一清單外頭號潛力台股與下一檔準進場觸發價</span>
+      </div>
+      <div class="briefing-grid" id="daily-briefing-grid"></div>
+    </section>
+
+    <!-- Section 1: 3 AI Traders PK Leaderboard -->
+    <section class="arena-section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title" data-i18n="secLeaderboardTitle">
+            🏆 3 位 AI 操盤手台股實盤模擬 PK 排行榜（點擊卡片切換檢視該 AI 持倉、損益日曆與明細）
+          </h2>
+          <p class="section-desc" id="leaderboard-summary-text"></p>
+        </div>
+        <div class="benchmark-pill" id="benchmark-summary-pill"></div>
+      </div>
+
+      <div class="traders-grid" id="traders-leaderboard-grid"></div>
+    </section>
+
+    <!-- Section 1.5: Past 1 Week Entry / Exit Points & Explicit AI Buyer/Seller Feed -->
+    <section class="arena-section" id="recent-ops-section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title" data-i18n="secRecentOpsTitle">
+            🎯 近一週最新台股進出場點位 ＆ 具體是哪位 AI 操盤手買賣戰報
+          </h2>
+          <p class="section-desc" id="recent-ops-summary-text">
+            預設僅顯示「近 1 週內（最近 5 個台股交易日）」最新動作，每張戰報頂部清楚標示由哪一位 AI 操盤手執行買進 (BUY) 或賣出 (SELL)
+          </p>
+        </div>
+        <div class="ops-filters-bar">
+          <!-- Time Window Toggle: Past 1 Week (Default) vs Full Period -->
+          <div class="segmented-pills" id="recent-ops-window-pills">
+            <button type="button" class="seg-pill active" data-ops-window="week">📅 近 1 週內最新操作 (預設)</button>
+            <button type="button" class="seg-pill" data-ops-window="all">📚 區間全部操作紀錄</button>
+          </div>
+          <!-- AI Trader Filter -->
+          <div class="segmented-pills" id="recent-ops-trader-pills">
+            <button type="button" class="seg-pill active" data-ops-trader="all">🤖 全部 AI 操盤手</button>
+            <button type="button" class="seg-pill" data-ops-trader="alpha-momentum">⚡ Alpha 動能 AI</button>
+            <button type="button" class="seg-pill" data-ops-trader="sigma-reversion">🎯 Sigma 抄底 AI</button>
+            <button type="button" class="seg-pill" data-ops-trader="titan-multifactor">🛡️ Titan 多因子 AI</button>
+          </div>
+          <!-- Action Type Filter -->
+          <div class="segmented-pills" id="recent-ops-filter-pills">
+            <button type="button" class="seg-pill active" data-ops-filter="all">全部動作</button>
+            <button type="button" class="seg-pill" data-ops-filter="BUY">🟢 買進 (BUY)</button>
+            <button type="button" class="seg-pill" data-ops-filter="SELL">🔴 賣出 (SELL)</button>
+            <button type="button" class="seg-pill" data-ops-filter="OPEN">🔥 持倉中</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="recent-ops-grid" id="recent-ops-grid"></div>
+    </section>
+
+    <!-- Section 1.8: Top 5 Most Promising External Taiwan Stocks Forecast (每週一自動更新清單外前五名潛力台股) -->
+    <section class="arena-section" id="top5-promising-section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">
+            🚀 AI 預測未來最有看頭的前五名潛力台股（每週一自動更新 · 清單外新標的探索）
+          </h2>
+          <p class="section-desc" id="top5-weekly-schedule-desc">
+            跳脫現有 14 檔台股交易清單，由 GitHub Actions 每週一自動掃描清單外高成長潛力台股池（3661 世芯-KY、6669 緯穎、3443 創意、1519 華城重電、2345 智邦、2379 瑞昱、2357 華碩、3037 欣興、2303 聯電、2618 長榮航），定錨當週 Top 5 清單外潛力台股並追蹤本週實盤表現
+          </p>
+        </div>
+        <div class="segmented-pills" id="top5-mode-pills">
+          <button type="button" class="seg-pill active" data-top5-mode="monday">🗓️ 每週一自動定錨週報 (預設)</button>
+          <button type="button" class="seg-pill" data-top5-mode="live">⚡ 最新收盤即時預覽</button>
+        </div>
+      </div>
+
+      <div class="top5-grid" id="top5-promising-grid"></div>
+    </section>
+
+    <!-- Section 1.9: Next Entry Watchlist & Estimated Trigger Prices (下一檔最接近買點的準進場清單) -->
+    <section class="arena-section" id="next-entry-section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">
+            🔮 下一檔最接近買點的台股準進場清單（Next Entry Watchlist ＆ 預計觸發買進價）
+          </h2>
+          <p class="section-desc">
+            針對目前尚未持倉的候選台股，即時計算 3 位 AI 操盤手的「進場準備度 (%)」與「具體預計觸發買進價格 (NT$)」— 讓你在 AI 正式出手前預先掌握精準埋伏點位
+          </p>
+        </div>
+      </div>
+
+      <div class="next-entry-grid" id="next-entry-grid"></div>
+    </section>
+
+    <!-- Section 2: Portfolio Equity Curve & Drawdown Comparison -->
+    <section class="arena-section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title" data-i18n="secEquityTitle">
+            📈 虛擬資產淨值曲線 ＆ 累積報酬率對比（3 位 AI 操盤手 vs. 0050 元大台灣50 大盤基準）
+          </h2>
+          <p class="section-desc" data-i18n="secEquityDesc">
+            滑鼠移至圖表上可逐日檢視 3 位 AI 操盤手的虛擬台幣資產淨值、當日報酬率與 0050 大盤差距（Alpha）
+          </p>
+        </div>
+        <div class="segmented-pills" id="equity-mode-pills">
+          <button type="button" class="seg-pill active" data-equity-mode="return">累積報酬率 (%)</button>
+          <button type="button" class="seg-pill" data-equity-mode="dollar">虛擬總資產 (NT$ TWD)</button>
+          <button type="button" class="seg-pill" data-equity-mode="drawdown">最大回撤水下圖 (Drawdown %)</button>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-legend" id="equity-chart-legend"></div>
+        <div class="canvas-wrap equity-canvas-wrap">
+          <canvas id="equity-canvas"></canvas>
+          <div class="chart-tooltip hidden" id="equity-tooltip"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 2.5: Daily / Weekly PnL Calendar Heatmap (每日／每週損益熱力日曆) -->
+    <section class="arena-section" id="daily-calendar-section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title" id="calendar-section-title">
+            📅 每日／每週損益熱力日曆（Daily PnL Calendar Heatmap ＆ 當日台股買賣標記）
+          </h2>
+          <p class="section-desc">
+            逐日檢視所選 AI 操盤手在每個台股交易日的單日損益金額 (NT$)、單日漲跌幅 (%)，以及當天具體買進或賣出了哪幾檔台股
+          </p>
+        </div>
+        <div class="segmented-pills" id="calendar-trader-pills"></div>
+      </div>
+
+      <div class="panel-card">
+        <div class="calendar-summary-strip" id="calendar-summary-strip"></div>
+        <div class="calendar-heatmap-grid" id="daily-calendar-grid"></div>
+      </div>
+    </section>
+
+    <!-- Section 3: Interactive K-Line Candlestick Chart with AI Entry/Exit Markers -->
+    <section class="arena-section" id="kline-section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title" data-i18n="secKlineTitle">
+            🕯️ 真實台股 K 線圖 ＆ AI 進場 (`BUY`)／退場 (`SELL`) 點位顯微鏡
+          </h2>
+          <p class="section-desc" data-i18n="secKlineDesc">
+            任選一檔真實台股（如 2330 台積電、2317 鴻海、2408 南亞科 DRAM 或清單外潛力股 3661 世芯-KY、3443 創意），直接檢視 AI 在哪一根 K 線買進、哪一根 K 線停利或停損退場
+          </p>
+        </div>
+        <div class="kline-controls">
+          <button type="button" class="btn-terminal btn-replay" id="btn-kline-replay">
+            ▶ 逐日回放進出場動畫
+          </button>
+        </div>
+      </div>
+
+      <!-- Asset Selector Pills -->
+      <div class="asset-selector-bar" id="kline-asset-pills"></div>
+
+      <div class="chart-card">
+        <div class="kline-top-bar" id="kline-header-stats"></div>
+        <div class="canvas-wrap kline-canvas-wrap">
+          <canvas id="kline-canvas"></canvas>
+          <div class="chart-tooltip hidden" id="kline-tooltip"></div>
+        </div>
+        <!-- Single-Asset Signals & Round-Trip Summary -->
+        <div class="kline-signals-strip" id="kline-signals-strip"></div>
+      </div>
+    </section>
+
+    <!-- Section 4: Selected AI Trader's Active Positions & Full Trade Execution Log -->
+    <section class="arena-section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title" id="ledger-section-title">
+            💼 AI 操盤手虛擬台股持倉帳本 ＆ 進出場決策理由日誌
+          </h2>
+          <p class="section-desc" data-i18n="secLedgerDesc">
+            完整揭露每一筆虛擬台幣資金的買進價、賣出價、持有天數、手續費與證交稅成本，以及 AI 當下決定進場與退場的量化指標依據
+          </p>
+        </div>
+        <div class="segmented-pills" id="trader-select-pills"></div>
+      </div>
+
+      <div class="ledger-two-col">
+        <!-- Active Open Positions -->
+        <div class="panel-card">
+          <div class="panel-card-header">
+            <h3 class="panel-card-title" data-i18n="subOpenPositions">🟢 目前持倉中台股部位 (Active Open Positions)</h3>
+            <span class="panel-badge" id="open-positions-badge">0 檔持倉</span>
+          </div>
+          <div class="table-scroll" id="open-positions-container"></div>
+        </div>
+
+        <!-- Portfolio Allocation Breakdown -->
+        <div class="panel-card">
+          <div class="panel-card-header">
+            <h3 class="panel-card-title" data-i18n="subAllocation">📊 虛擬台幣資金配置與風控指標 (Capital Allocation)</h3>
+            <span class="panel-badge" id="exposure-badge">現金 0%</span>
+          </div>
+          <div id="allocation-breakdown-container"></div>
+        </div>
+      </div>
+
+      <!-- Closed Trades & Chronological Order Execution Journal -->
+      <div class="panel-card mt-16">
+        <div class="panel-card-header">
+          <div class="panel-tabs">
+            <button type="button" class="panel-tab active" data-ledger-tab="closed" id="tab-closed-trades">
+              已平倉完整來回交易 (Closed Round-Trips)
+            </button>
+            <button type="button" class="panel-tab" data-ledger-tab="orders" id="tab-order-events">
+              逐筆委託成交流水帳 (All BUY / SELL Executions)
+            </button>
+          </div>
+          <span class="panel-badge" id="closed-trades-badge">0 筆交易</span>
+        </div>
+        <div class="table-scroll" id="closed-trades-container"></div>
+      </div>
+    </section>
+
+    <!-- Section 5: Today's Real-Time AI Signal Radar across All 14 Taiwan Stocks -->
+    <section class="arena-section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title" data-i18n="secRadarTitle">
+            📡 最新交易日台股 AI 實盤訊號雷達（14 檔台股權值、AI 伺服器、DRAM 與 ETF 即時診斷）
+          </h2>
+          <p class="section-desc" data-i18n="secRadarDesc">
+            根據最新一個台股交易日的真實收盤價與技術指標，匯總 3 位 AI 操盤手對「當下應買進、賣出、續抱或觀望」的最新決策
+          </p>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="table-scroll">
+          <table class="quant-table" id="radar-table">
+            <thead>
+              <tr>
+                <th>台股標的 (Ticker)</th>
+                <th>最新真實收盤價 (NT$)</th>
+                <th>單日漲跌</th>
+                <th>5日 / 20日動能</th>
+                <th>RSI(14)</th>
+                <th>布林 %B / Z-Score</th>
+                <th>SMA50 生命線趨勢</th>
+                <th>⚡ Alpha 動能 AI 決策</th>
+                <th>🎯 Sigma 抄底 AI 決策</th>
+                <th>🛡️ Titan 多因子 AI 決策</th>
+              </tr>
+            </thead>
+            <tbody id="radar-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Sync & Auto-Cron Modal -->
+  <div class="modal-backdrop hidden" id="sync-modal">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <h3>⚡ 台股真實股價同步 ＆ GitHub Actions 每日／每週一自動盯盤設定</h3>
+        <button type="button" class="modal-close" id="btn-close-sync-modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="sync-status-box">
+          <div class="sync-stat-row">
+            <span>資料來源 (Data Feed)：</span>
+            <strong>Yahoo Finance v8 OHLCV API (24 檔台灣證交所 .TW 真實收盤報價)</strong>
+          </div>
+          <div class="sync-stat-row">
+            <span>最近一次同步時間：</span>
+            <strong id="modal-last-sync-time">-</strong>
+          </div>
+          <div class="sync-stat-row">
+            <span>自動排程 (GitHub Actions Cron)：</span>
+            <strong>每個台股交易日收盤後自動同步股價 + 每週一自動更新清單外 Top 5 潛力台股</strong>
+          </div>
+        </div>
+
+        <p class="modal-note">
+          💡 <strong>如何運作？</strong> 本平台透過 GitHub Actions 的 <code>market-sync.yml</code> 排程，每個台股交易日自動向 Yahoo Finance 抓取 14 檔核心台股與 10 檔清單外潛力台股之最新真實日 K 線，讓 3 位 AI 操盤手根據最新行情執行買賣並更新 GitHub Pages 帳本。你也可以在下方輸入 GitHub Personal Access Token (<code>workflow</code> 權限) 立即手動觸發雲端同步，或直接點選「瀏覽器即時重算」。
+        </p>
+
+        <div class="token-input-group">
+          <label for="input-gh-token">GitHub PAT Token (選填，僅儲存於本機 localStorage 用於觸發 workflow_dispatch)：</label>
+          <input
+            type="password"
+            id="input-gh-token"
+            class="terminal-input"
+            placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+          />
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-terminal btn-primary" id="btn-trigger-gh-sync">
+            🚀 觸發 GitHub Actions 雲端更新台股真實股價
+          </button>
+          <button type="button" class="btn-terminal" id="btn-local-recalc">
+            🔄 立即重新執行本地 AI 模擬撮合
+          </button>
+        </div>
+        <div class="sync-feedback" id="sync-feedback-msg"></div>
+
+        <h4 class="sync-history-title">📅 台股每日自動盯盤同步紀錄 (Recent Market Sync Log)</h4>
+        <div class="sync-history-list" id="sync-history-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

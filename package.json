@@ -1,0 +1,17 @@
+{
+  "name": "tw-ai-quant-trading-arena",
+  "version": "1.0.0",
+  "description": "Taiwan Stock Exchange (TWSE) AI Paper Trading Arena — 3 Autonomous Quant AI Traders Competing on Real Taiwan Stocks (2330 TSMC, 2317 Foxconn, 2454 MediaTek, DRAM, AI Servers, 0050) with Weekly Monday Top 5 Discovery",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "sync:market": "node scripts/sync-market-data.mjs",
+    "simulate": "node scripts/run-simulation.mjs",
+    "build": "node scripts/build-site.mjs",
+    "serve": "node scripts/serve.mjs",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
