@@ -1,13 +1,13 @@
 {
   "source": "Yahoo Finance Real-Time & Historical OHLCV Feed",
-  "fetchedAt": "2026-10-15T04:56:25.355Z",
+  "fetchedAt": "2026-10-15T11:34:17.194Z",
   "assetsCount": 24,
   "symbols": {
     "1519": {
       "symbol": "1519",
       "currency": "TWD",
       "exchangeName": "TAI",
-      "regularMarketPrice": 652,
+      "regularMarketPrice": 649,
       "previousClose": 505.785,
       "barsCount": 486,
       "firstDate": "2024-10-15",
@@ -4384,8 +4384,8 @@
           "open": 670,
           "high": 683,
           "low": 647,
-          "close": 652,
-          "volume": 2230100
+          "close": 649,
+          "volume": 2953672
         }
       ]
     },
@@ -8771,7 +8771,7 @@
           "high": 137,
           "low": 132.5,
           "close": 133.5,
-          "volume": 169438828
+          "volume": 214575784
         }
       ]
     },
@@ -8779,7 +8779,7 @@
       "symbol": "2308",
       "currency": "TWD",
       "exchangeName": "TAI",
-      "regularMarketPrice": 1635,
+      "regularMarketPrice": 1630,
       "previousClose": 398.5,
       "barsCount": 486,
       "firstDate": "2024-10-15",
@@ -13156,8 +13156,8 @@
           "open": 1690,
           "high": 1700,
           "low": 1610,
-          "close": 1635,
-          "volume": 21282927
+          "close": 1630,
+          "volume": 25165431
         }
       ]
     },
@@ -17543,7 +17543,7 @@
           "high": 240,
           "low": 238,
           "close": 239.5,
-          "volume": 39181496
+          "volume": 48438668
         }
       ]
     },
@@ -21929,7 +21929,7 @@
           "high": 2450,
           "low": 2420,
           "close": 2440,
-          "volume": 43851018
+          "volume": 57820478
         }
       ]
     },
@@ -21937,7 +21937,7 @@
       "symbol": "2344",
       "currency": "TWD",
       "exchangeName": "TAI",
-      "regularMarketPrice": 155.5,
+      "regularMarketPrice": 155,
       "previousClose": 20.35,
       "barsCount": 486,
       "firstDate": "2024-10-15",
@@ -26314,8 +26314,8 @@
           "open": 157,
           "high": 159,
           "low": 153,
-          "close": 155.5,
-          "volume": 65335946
+          "close": 155,
+          "volume": 79165780
         }
       ]
     },
@@ -26323,7 +26323,7 @@
       "symbol": "2345",
       "currency": "TWD",
       "exchangeName": "TAI",
-      "regularMarketPrice": 1970,
+      "regularMarketPrice": 1950,
       "previousClose": 558,
       "barsCount": 486,
       "firstDate": "2024-10-15",
@@ -30700,8 +30700,8 @@
           "open": 1915,
           "high": 2005,
           "low": 1910,
-          "close": 1970,
-          "volume": 3715392
+          "close": 1950,
+          "volume": 4607746
         }
       ]
     },
@@ -30709,7 +30709,7 @@
       "symbol": "2357",
       "currency": "TWD",
       "exchangeName": "TAI",
-      "regularMarketPrice": 980,
+      "regularMarketPrice": 975,
       "previousClose": 599,
       "barsCount": 486,
       "firstDate": "2024-10-15",
@@ -35084,10 +35084,10 @@
           "date": "2026-10-15",
           "timestamp": 1792026000,
           "open": 971,
-          "high": 983,
+          "high": 985,
           "low": 966,
-          "close": 980,
-          "volume": 1895037
+          "close": 975,
+          "volume": 2597540
         }
       ]
     },
@@ -35095,7 +35095,7 @@
       "symbol": "2379",
       "currency": "TWD",
       "exchangeName": "TAI",
-      "regularMarketPrice": 766,
+      "regularMarketPrice": 764,
       "previousClose": 489.5,
       "barsCount": 486,
       "firstDate": "2024-10-15",
@@ -39472,8 +39472,8 @@
           "open": 767,
           "high": 779,
           "low": 760,
-          "close": 766,
-          "volume": 2383940
+          "close": 764,
+          "volume": 3118517
         }
       ]
     },
@@ -39481,7 +39481,7 @@
       "symbol": "2382",
       "currency": "TWD",
       "exchangeName": "TAI",
-      "regularMarketPrice": 318,
+      "regularMarketPrice": 316.5,
       "previousClose": 295.5,
       "barsCount": 486,
       "firstDate": "2024-10-15",
@@ -43858,8 +43858,8 @@
           "open": 320.5,
           "high": 320.5,
           "low": 313.5,
-          "close": 318,
-          "volume": 11283096
+          "close": 316.5,
+          "volume": 15421586
         }
       ]
     },
@@ -48245,7 +48245,7 @@
           "high": 457,
           "low": 432.5,
           "close": 439.5,
-          "volume": 69352926
+          "volume": 78339384
         }
       ]
     },
@@ -48253,7 +48253,7 @@
       "symbol": "2454",
       "currency": "TWD",
       "exchangeName": "TAI",
-      "regularMarketPrice": 4200,
+      "regularMarketPrice": 4165,
       "previousClose": 1300,
       "barsCount": 486,
       "firstDate": "2024-10-15",
@@ -52630,8 +52630,8 @@
           "open": 4195,
           "high": 4295,
           "low": 4145,
-          "close": 4200,
-          "volume": 15047695
+          "close": 4165,
+          "volume": 18514362
         }
       ]
     },
@@ -52639,7 +52639,7 @@
       "symbol": "2603",
       "currency": "TWD",
       "exchangeName": "TAI",
-      "regularMarketPrice": 259.5,
+      "regularMarketPrice": 257,
       "previousClose": 187.5,
       "barsCount": 486,
       "firstDate": "2024-10-15",
@@ -57016,8 +57016,8 @@
           "open": 260.5,
           "high": 261,
           "low": 254.5,
-          "close": 259.5,
-          "volume": 10831462
+          "close": 257,
+          "volume": 15170419
         }
       ]
     },
@@ -57025,7 +57025,7 @@
       "symbol": "2618",
       "currency": "TWD",
       "exchangeName": "TAI",
-      "regularMarketPrice": 43.4,
+      "regularMarketPrice": 43.45,
       "previousClose": 36.3,
       "barsCount": 486,
       "firstDate": "2024-10-15",
@@ -61402,8 +61402,8 @@
           "open": 43.3,
           "high": 43.5,
           "low": 42.9,
-          "close": 43.4,
-          "volume": 16413184
+          "close": 43.45,
+          "volume": 20302460
         }
       ]
     },
@@ -61411,7 +61411,7 @@
       "symbol": "2881",
       "currency": "TWD",
       "exchangeName": "TAI",
-      "regularMarketPrice": 159,
+      "regularMarketPrice": 159.5,
       "previousClose": 89.659,
       "barsCount": 486,
       "firstDate": "2024-10-15",
@@ -65788,8 +65788,8 @@
           "open": 160.5,
           "high": 160.5,
           "low": 157,
-          "close": 159,
-          "volume": 17200160
+          "close": 159.5,
+          "volume": 24064384
         }
       ]
     },
@@ -65797,7 +65797,7 @@
       "symbol": "3008",
       "currency": "TWD",
       "exchangeName": "TAI",
-      "regularMarketPrice": 6715,
+      "regularMarketPrice": 6605,
       "previousClose": 2510,
       "barsCount": 486,
       "firstDate": "2024-10-15",
@@ -70174,8 +70174,8 @@
           "open": 6500,
           "high": 6835,
           "low": 6485,
-          "close": 6715,
-          "volume": 2814659
+          "close": 6605,
+          "volume": 3317049
         }
       ]
     },
@@ -70183,7 +70183,7 @@
       "symbol": "3017",
       "currency": "TWD",
       "exchangeName": "TAI",
-      "regularMarketPrice": 3135,
+      "regularMarketPrice": 3085,
       "previousClose": 679,
       "barsCount": 486,
       "firstDate": "2024-10-15",
@@ -74560,8 +74560,8 @@
           "open": 3200,
           "high": 3220,
           "low": 3050,
-          "close": 3135,
-          "volume": 3168036
+          "close": 3085,
+          "volume": 4117102
         }
       ]
     },
@@ -78947,7 +78947,7 @@
           "high": 1115,
           "low": 1070,
           "close": 1075,
-          "volume": 25898834
+          "volume": 29104625
         }
       ]
     },
@@ -78955,7 +78955,7 @@
       "symbol": "3231",
       "currency": "TWD",
       "exchangeName": "TAI",
-      "regularMarketPrice": 176.5,
+      "regularMarketPrice": 176,
       "previousClose": 109,
       "barsCount": 486,
       "firstDate": "2024-10-15",
@@ -83332,8 +83332,8 @@
           "open": 184.5,
           "high": 184.5,
           "low": 173.5,
-          "close": 176.5,
-          "volume": 66280837
+          "close": 176,
+          "volume": 75280365
         }
       ]
     },
@@ -83341,7 +83341,7 @@
       "symbol": "3443",
       "currency": "TWD",
       "exchangeName": "TAI",
-      "regularMarketPrice": 7865,
+      "regularMarketPrice": 7670,
       "previousClose": 1215,
       "barsCount": 486,
       "firstDate": "2024-10-15",
@@ -87718,8 +87718,8 @@
           "open": 7905,
           "high": 8095,
           "low": 7570,
-          "close": 7865,
-          "volume": 2006420
+          "close": 7670,
+          "volume": 2351062
         }
       ]
     },
@@ -87727,7 +87727,7 @@
       "symbol": "3661",
       "currency": "TWD",
       "exchangeName": "TAI",
-      "regularMarketPrice": 3760,
+      "regularMarketPrice": 3705,
       "previousClose": 1940,
       "barsCount": 486,
       "firstDate": "2024-10-15",
@@ -92104,8 +92104,8 @@
           "open": 3675,
           "high": 3830,
           "low": 3670,
-          "close": 3760,
-          "volume": 1848215
+          "close": 3705,
+          "volume": 2288438
         }
       ]
     },
@@ -96491,7 +96491,7 @@
           "high": 1940,
           "low": 1905,
           "close": 1905,
-          "volume": 9535921
+          "volume": 10159270
         }
       ]
     },
@@ -96499,7 +96499,7 @@
       "symbol": "0050",
       "currency": "TWD",
       "exchangeName": "TAI",
-      "regularMarketPrice": 109.1,
+      "regularMarketPrice": 108.9,
       "previousClose": 49.1,
       "barsCount": 486,
       "firstDate": "2024-10-15",
@@ -100876,8 +100876,8 @@
           "open": 110.15,
           "high": 110.15,
           "low": 108.55,
-          "close": 109.1,
-          "volume": 393148127
+          "close": 108.9,
+          "volume": 452097149
         }
       ]
     },
@@ -100885,7 +100885,7 @@
       "symbol": "0056",
       "currency": "TWD",
       "exchangeName": "TAI",
-      "regularMarketPrice": 58.2,
+      "regularMarketPrice": 58.25,
       "previousClose": 39.1,
       "barsCount": 486,
       "firstDate": "2024-10-15",
@@ -105262,8 +105262,8 @@
           "open": 58.4,
           "high": 58.65,
           "low": 57.9,
-          "close": 58.2,
-          "volume": 152577035
+          "close": 58.25,
+          "volume": 173143172
         }
       ]
     }
