@@ -1,5 +1,51 @@
 [
   {
+    "syncedAt": "2026-11-02T06:35:46.918Z",
+    "latestTradingDate": "2026-11-02",
+    "marketDate": "2026-11-02",
+    "trigger": "schedule",
+    "runNumber": 16,
+    "etf0050Close": 104.1,
+    "tsmc2330Close": 2330,
+    "benchmark1MReturnPct": -7.1,
+    "champion30d": {
+      "traderId": "titan-multifactor",
+      "traderName": "Titan 多因子風控型 AI",
+      "returnPct": 0.53,
+      "equity": 1005307.75
+    },
+    "leader1M": {
+      "id": "titan-multifactor",
+      "nameZh": "Titan 多因子風控型 AI",
+      "returnPct": 0.53,
+      "equity": 1005307.75
+    },
+    "traders1M": {
+      "alpha-momentum": {
+        "returnPct": -4.44,
+        "equity": 955552.67,
+        "openPositions": [
+          "2881"
+        ]
+      },
+      "sigma-reversion": {
+        "returnPct": -4.35,
+        "equity": 956519.36,
+        "openPositions": [
+          "0056"
+        ]
+      },
+      "titan-multifactor": {
+        "returnPct": 0.53,
+        "equity": 1005307.75,
+        "openPositions": [
+          "2881",
+          "2603"
+        ]
+      }
+    }
+  },
+  {
     "syncedAt": "2026-10-30T12:59:35.926Z",
     "latestTradingDate": "2026-10-30",
     "marketDate": "2026-10-30",
