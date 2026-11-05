@@ -1,5 +1,53 @@
 [
   {
+    "syncedAt": "2026-11-05T14:42:25.949Z",
+    "latestTradingDate": "2026-11-05",
+    "marketDate": "2026-11-05",
+    "trigger": "schedule",
+    "runNumber": 20,
+    "etf0050Close": 97.15,
+    "tsmc2330Close": 2240,
+    "benchmark1MReturnPct": -16.21,
+    "champion30d": {
+      "traderId": "sigma-reversion",
+      "traderName": "Sigma 波段抄底型 AI",
+      "returnPct": 0.08,
+      "equity": 1000789.04
+    },
+    "leader1M": {
+      "id": "sigma-reversion",
+      "nameZh": "Sigma 波段抄底型 AI",
+      "returnPct": 0.08,
+      "equity": 1000789.04
+    },
+    "traders1M": {
+      "alpha-momentum": {
+        "returnPct": -3.29,
+        "equity": 967092.52,
+        "openPositions": [
+          "2881",
+          "2603"
+        ]
+      },
+      "sigma-reversion": {
+        "returnPct": 0.08,
+        "equity": 1000789.04,
+        "openPositions": [
+          "2881",
+          "2603"
+        ]
+      },
+      "titan-multifactor": {
+        "returnPct": -4.29,
+        "equity": 957120.41,
+        "openPositions": [
+          "2881",
+          "2603"
+        ]
+      }
+    }
+  },
+  {
     "syncedAt": "2026-11-04T14:37:10.547Z",
     "latestTradingDate": "2026-11-04",
     "marketDate": "2026-11-04",
