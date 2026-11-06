@@ -82,7 +82,15 @@ export function runArenaSimulation(rawMarketData, options = {}) {
     : eligibleAssets[0]?.symbol || Object.keys(enrichedBySymbol)[0];
 
   const fullTimeline = (enrichedBySymbol[timelineSymbol] || []).map((b) => b.date);
-  const startIdx = Math.max(0, fullTimeline.length - periodDays);
+  // Live forward mode: `tradeFromDate` (YYYY-MM-DD) starts a fresh account on that day. The last bar before it
+  // is a baseline day (equity = capital, benchmark anchor) and no orders are allowed before the start date, so
+  // nothing bought earlier counts. Indicators still warm up on the full history (no look-ahead).
+  const tradeFromDate = options.tradeFromDate || null;
+  let startIdx = Math.max(0, fullTimeline.length - periodDays);
+  if (tradeFromDate) {
+    const firstLive = fullTimeline.findIndex((d) => d >= tradeFromDate);
+    startIdx = firstLive === -1 ? Math.max(0, fullTimeline.length - 1) : Math.max(0, firstLive - 1);
+  }
   const timelineDates = fullTimeline.slice(startIdx);
 
   // Last 5 trading days (~7 calendar days = Past 1 Week)
@@ -168,8 +176,10 @@ export function runArenaSimulation(rawMarketData, options = {}) {
         }
       }
 
+      const tradingOpen = !tradeFromDate || date >= tradeFromDate;
+
       // STEP 1: Evaluate EXITS on currently held positions
-      for (const [symbol, pos] of Array.from(openPositions.entries())) {
+      for (const [symbol, pos] of tradingOpen ? Array.from(openPositions.entries()) : []) {
         const bar = barBySymbolAndDate[symbol]?.get(date);
         if (!bar) continue;
 
@@ -263,7 +273,7 @@ export function runArenaSimulation(rawMarketData, options = {}) {
       }
 
       // STEP 2: Evaluate ENTRIES across eligible assets not currently in portfolio
-      if (openPositions.size < trader.maxPositions) {
+      if (tradingOpen && openPositions.size < trader.maxPositions) {
         const candidates = [];
         for (const asset of eligibleAssets) {
           if (openPositions.has(asset.symbol)) continue;
@@ -677,7 +687,9 @@ export function runArenaSimulation(rawMarketData, options = {}) {
       marketFilter,
       top5Mode,
       enabledSymbols: eligibleAssets.map((a) => a.symbol),
-      startDate: timelineDates[0] || '',
+      startDate: tradeFromDate || timelineDates[0] || '',
+      tradeFromDate,
+      liveDaysCount: tradeFromDate ? timelineDates.filter((d) => d >= tradeFromDate).length : null,
       endDate: timelineDates.at(-1) || '',
       tradingDaysCount: timelineDates.length
     },

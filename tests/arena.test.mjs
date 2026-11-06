@@ -140,3 +140,23 @@ test('Single-Asset K-Line Simulation produces valid bars and trade markers for 2
     }
   }
 });
+
+test('live forward mode: fresh account, no orders before tradeFromDate', async () => {
+  const { runArenaSimulation: run } = await import('../src/simulator.mjs');
+  const fs = await import('node:fs');
+  const raw = JSON.parse(fs.readFileSync(new URL('../data/market-snapshot.json', import.meta.url), 'utf8'));
+  const sym = Object.keys(raw.symbols)[0];
+  const dates = raw.symbols[sym].bars.map((b) => b.date);
+  const from = dates.at(-15);
+  const r = run(raw, { tradeFromDate: from });
+  assert.equal(r.config.startDate, from);
+  for (const t of r.leaderboard) {
+    assert.ok(t.equityCurve[0].equity === r.config.initialCapital, 'baseline day equals capital');
+    for (const e of t.orderEvents) assert.ok(e.date >= from, `order ${e.date} before ${from}`);
+  }
+  const future = run(raw, { tradeFromDate: '2999-01-01' });
+  for (const t of future.leaderboard) {
+    assert.equal(t.orderEvents.length, 0);
+    assert.ok(Number.isFinite(t.metrics.totalReturnPct));
+  }
+});
