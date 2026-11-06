@@ -494,6 +494,7 @@ export function runArenaSimulation(rawMarketData, options = {}) {
       if (!eventsByDate.has(ev.date)) eventsByDate.set(ev.date, []);
       eventsByDate.get(ev.date).push(ev);
     }
+    const periodPnl = buildPeriodPnl(equityCurve);
     const dailyCalendar = equityCurve.map((pt) => ({
       date: pt.date,
       equity: pt.equity,
@@ -571,6 +572,7 @@ export function runArenaSimulation(rawMarketData, options = {}) {
       },
       equityCurve,
       dailyCalendar,
+      periodPnl,
       activePositions,
       closedTrades: closedTrades.slice().reverse(),
       orderEvents: orderEvents.slice().reverse()
@@ -1214,4 +1216,38 @@ export function runSingleAssetSimulation(rawMarketData, symbol, traderId, period
     openPositionSummary,
     assetBuyHoldPct
   };
+}
+
+
+/** Monday (YYYY-MM-DD) of the week containing `date`. */
+export function weekStart(date) {
+  const d = new Date(date + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * Weekly and monthly P&L from an equity curve: each period's P&L = its last equity minus the last equity of the
+ * previous period (the first period is measured from the first point, i.e. the baseline day).
+ */
+export function buildPeriodPnl(curve) {
+  const group = (keyFn) => {
+    const out = [];
+    let prevEnd = curve.length ? curve[0].equity : 0;
+    for (const pt of curve) {
+      const key = keyFn(pt.date);
+      let row = out.at(-1);
+      if (!row || row.period !== key) {
+        if (row) prevEnd = row.endEquity;
+        row = { period: key, startEquity: prevEnd, endEquity: pt.equity, pnl: 0, from: pt.date, to: pt.date };
+        out.push(row);
+      }
+      row.endEquity = pt.equity;
+      row.to = pt.date;
+      row.pnl = row.endEquity - row.startEquity;
+      row.pnlPct = row.startEquity ? (row.pnl / row.startEquity) * 100 : 0;
+    }
+    return out;
+  };
+  return { weekly: group(weekStart), monthly: group((d) => d.slice(0, 7)) };
 }

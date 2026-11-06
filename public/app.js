@@ -317,6 +317,7 @@ function recomputeAndRender(selectChampion = false) {
   renderCustomWatchlistDeck();
   renderDailyBriefingSection();
   renderLeaderboard();
+  renderPeriodPnl();
   renderRecentOperationsSection();
   renderTop5PromisingSection();
   renderNextEntryWatchlistSection();
@@ -2129,3 +2130,31 @@ function renderSyncModal() {
 }
 
 initApp();
+
+
+// ---------------- Weekly / monthly P&L per AI ----------------
+let periodPnlMode = 'weekly';
+document.getElementById('period-pnl-pills')?.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-pp]');
+  if (!b) return;
+  periodPnlMode = b.dataset.pp;
+  document.querySelectorAll('#period-pnl-pills .seg-pill').forEach((el) => el.classList.toggle('active', el === b));
+  renderPeriodPnl();
+});
+
+function renderPeriodPnl() {
+  const table = document.getElementById('period-pnl-table');
+  if (!table || !state.arenaResult) return;
+  const rows = state.arenaResult.leaderboard;
+  const periods = [...new Set(rows.flatMap((r) => (r.periodPnl?.[periodPnlMode] || []).map((p) => p.period)))].sort().reverse();
+  const cell = (r, period) => {
+    const p = (r.periodPnl?.[periodPnlMode] || []).find((x) => x.period === period);
+    if (!p) return '<td class="mono">—</td>';
+    const cls = p.pnl > 0 ? 'pos-val' : p.pnl < 0 ? 'neg-val' : '';
+    return `<td class="mono ${cls}">${p.pnl >= 0 ? '+' : '−'}${fmtMoney(Math.abs(p.pnl), 0)}<br><small>${fmtPct(p.pnlPct)}</small></td>`;
+  };
+  const label = (period) => periodPnlMode === 'weekly' ? `${period.slice(5)} 當週` : `${period.replace('-', ' 年 ')} 月`;
+  table.innerHTML = `<thead><tr><th>${periodPnlMode === 'weekly' ? '週（週一）' : '月份'}</th>${rows.map((r) => `<th style="color:${r.trader.color}">${r.trader.nameZh}</th>`).join('')}</tr></thead>
+    <tbody>${periods.length ? periods.map((p) => `<tr><td class="mono">${label(p)}</td>${rows.map((r) => cell(r, p)).join('')}</tr>`).join('')
+      : `<tr><td colspan="${rows.length + 1}">第一個交易日收盤後開始累積</td></tr>`}</tbody>`;
+}

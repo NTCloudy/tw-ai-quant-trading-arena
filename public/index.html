@@ -155,6 +155,21 @@
       <div class="traders-grid" id="traders-leaderboard-grid"></div>
     </section>
 
+    <!-- Weekly / Monthly P&L per AI -->
+    <section class="arena-section" id="period-pnl-section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">📊 每週／每月損益（各 AI 對照）</h2>
+          <p class="section-desc">每週＝週一到週五的淨值變化；每月＝該月第一天到最後一天的淨值變化（含未實現損益）。</p>
+        </div>
+        <div class="segmented-pills" id="period-pnl-pills">
+          <button type="button" class="seg-pill active" data-pp="weekly">每週</button>
+          <button type="button" class="seg-pill" data-pp="monthly">每月</button>
+        </div>
+      </div>
+      <div class="panel-card"><div class="table-scroll"><table class="quant-table" id="period-pnl-table"></table></div></div>
+    </section>
+
     <!-- Section 1.5: Past 1 Week Entry / Exit Points & Explicit AI Buyer/Seller Feed -->
     <section class="arena-section" id="recent-ops-section">
       <div class="section-header">
