@@ -350,8 +350,15 @@ export const ALL_SYNC_ASSETS = [...ASSET_UNIVERSE, ...DISCOVERY_CANDIDATE_UNIVER
 
 export const BENCHMARK_SYMBOL = '0050';
 
+const EXTRA_META = new Map();
+/** Registers metadata for assets loaded at runtime (the broad candidate universe). */
+export function registerAssets(list) {
+  for (const a of list) EXTRA_META.set(a.symbol, a);
+}
+
 export function getAssetMeta(symbol) {
   return (
+    EXTRA_META.get(symbol) ||
     ASSET_UNIVERSE.find((a) => a.symbol === symbol) ||
     DISCOVERY_CANDIDATE_UNIVERSE.find((a) => a.symbol === symbol) || {
       symbol,

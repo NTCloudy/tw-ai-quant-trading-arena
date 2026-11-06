@@ -6,7 +6,9 @@ const LIVE_START = '2026-11-06';
 
 const [kind = 'week', arg = new Date().toISOString().slice(0, 10)] = process.argv.slice(2);
 const raw = JSON.parse(fs.readFileSync(new URL('../data/market-snapshot.json', import.meta.url), 'utf8'));
-const r = runArenaSimulation(raw, { tradeFromDate: LIVE_START });
+let broadData = null;
+try { broadData = JSON.parse(fs.readFileSync(new URL('../data/broad-snapshot.json', import.meta.url), 'utf8')); } catch {}
+const r = runArenaSimulation(raw, { broadData, tradeFromDate: LIVE_START });
 const key = kind === 'week' ? weekStart(arg) : arg.slice(0, 7);
 const list = kind === 'week' ? 'weekly' : 'monthly';
 const rows = r.leaderboard.map((t) => {
