@@ -1,13 +1,13 @@
 [
   {
-    "syncedAt": "2026-11-06T14:19:41.684Z",
+    "syncedAt": "2026-11-07T08:29:41.809Z",
     "latestTradingDate": "2026-11-06",
     "marketDate": "2026-11-06",
-    "trigger": "schedule",
-    "runNumber": 25,
+    "trigger": "workflow_dispatch",
+    "runNumber": 27,
     "etf0050Close": 92.5,
     "tsmc2330Close": 2135,
-    "benchmark1MReturnPct": -20.6,
+    "benchmark1MReturnPct": -20.77,
     "champion30d": {
       "traderId": "sigma-reversion",
       "traderName": "Sigma 波段抄底型 AI",
