@@ -314,7 +314,8 @@ function recomputeAndRender(selectChampion = false) {
     state.marketData,
     state.selectedSymbol,
     state.selectedTraderId,
-    Math.max(40, Number(state.periodDays) || 22)
+    Math.max(40, Number(state.periodDays) || 22),
+    { broadData: state.broadData, feeRate: state.feeRate }
   );
 
   renderTopTickerTape();
@@ -448,7 +449,8 @@ function renderTopTickerTape() {
         state.marketData,
         state.selectedSymbol,
         state.selectedTraderId,
-        Math.max(40, Number(state.periodDays) || 22)
+        Math.max(40, Number(state.periodDays) || 22),
+        { broadData: state.broadData, feeRate: state.feeRate }
       );
       renderTopTickerTape();
       renderKlineAssetPills();
@@ -652,7 +654,8 @@ function renderLeaderboard() {
         state.marketData,
         state.selectedSymbol,
         state.selectedTraderId,
-        Math.max(40, Number(state.periodDays) || 22)
+        Math.max(40, Number(state.periodDays) || 22),
+        { broadData: state.broadData, feeRate: state.feeRate }
       );
       renderLeaderboard();
       renderDailyCalendarSection();
@@ -672,7 +675,8 @@ function jumpToKlineAssetAndTrader(symbol, traderId) {
     state.marketData,
     state.selectedSymbol,
     state.selectedTraderId,
-    Math.max(40, Number(state.periodDays) || 22)
+    Math.max(40, Number(state.periodDays) || 22),
+    { broadData: state.broadData, feeRate: state.feeRate }
   );
   renderTopTickerTape();
   renderLeaderboard();
@@ -874,7 +878,7 @@ function renderTop5PromisingSection() {
 
   const meta = state.arenaResult.top5WeeklyMeta;
   if (descEl && meta) {
-    descEl.innerHTML = `🗓️ <strong>每週一 GitHub Actions 自動更新機制</strong>：本週一定錨日 <strong style="color:var(--accent-cyan);">${meta.anchorTradingDate}</strong> · 下一次自動換倉更新日 <strong style="color:#fde047;">${meta.nextMondayDate} (週一)</strong> · 嚴選「不在目前 14 檔交易清單內」的華爾街高成長美股並追蹤本週實盤表現`;
+    descEl.innerHTML = `🗓️ <strong>每週一 GitHub Actions 自動更新機制</strong>：本週一定錨日 <strong style="color:var(--accent-cyan);">${meta.anchorTradingDate}</strong> · 下一次自動換倉更新日 <strong style="color:#fde047;">${meta.nextMondayDate} (週一)</strong> · 嚴選「不在目前 14 檔交易清單內」的台股高成長潛力股並追蹤本週實盤表現`;
   }
 
   const list = state.arenaResult.top5Promising;
@@ -895,7 +899,7 @@ function renderTop5PromisingSection() {
                 ${isTop1 ? '👑 TOP #1 首選' : `🚀 TOP #${item.rank}`}
               </span>
               <span class="mono" style="font-size:10px;padding:1px 6px;border-radius:4px;background:rgba(168,85,247,0.18);border:1px solid rgba(168,85,247,0.45);color:#e9d5ff;">
-                🆕 清單外潛力美股 · 週一選股
+                🆕 清單外潛力台股 · 週一選股
               </span>
             </div>
             <div class="top5-score-box">
@@ -1425,7 +1429,8 @@ function renderKlineAssetPills() {
         state.marketData,
         state.selectedSymbol,
         state.selectedTraderId,
-        Math.max(40, Number(state.periodDays) || 22)
+        Math.max(40, Number(state.periodDays) || 22),
+        { broadData: state.broadData, feeRate: state.feeRate }
       );
       renderTopTickerTape();
       renderKlineAssetPills();
@@ -1818,7 +1823,8 @@ function renderTraderSelectPills() {
         state.marketData,
         state.selectedSymbol,
         state.selectedTraderId,
-        Math.max(40, Number(state.periodDays) || 22)
+        Math.max(40, Number(state.periodDays) || 22),
+        { broadData: state.broadData, feeRate: state.feeRate }
       );
       renderLeaderboard();
       renderDailyCalendarSection();

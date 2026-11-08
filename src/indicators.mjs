@@ -11,9 +11,7 @@ export function computeSMA(values, period) {
     if (i >= period) {
       sum -= values[i - period];
     }
-    if (i >= period - 1) {
-      out[i] = sum / period;
-    }
+    out[i] = sum / Math.min(i + 1, period);
   }
   return out;
 }
@@ -167,6 +165,7 @@ export function enrichBarsWithIndicators(bars) {
 
     return {
       ...bar,
+      barIndex: i,
       dailyReturnPct,
       sma8: sma8[i] ?? bar.close,
       sma20: sma20[i] ?? bar.close,

@@ -10,6 +10,23 @@ import { enrichBarsWithIndicators } from './indicators.mjs';
 import { AI_TRADERS, evaluateTraderSignal } from './traders.mjs';
 
 /**
+ * Unified 0050 benchmark regime builder used across simulation, radar, top5, and single-asset K-line.
+ */
+export function buildRegime(spyBar) {
+  return {
+    spyBullish: spyBar
+      ? spyBar.close >= spyBar.sma50 * 0.99 && spyBar.sma20 >= spyBar.sma50 * 0.985
+      : true,
+    spyShortTermBull: spyBar
+      ? spyBar.close >= spyBar.sma20 * 0.99 || spyBar.ema8 >= spyBar.ema21
+      : true,
+    spyRsi: spyBar ? spyBar.rsi14 : 50,
+    spyRoc10: spyBar ? spyBar.roc10 : 0,
+    spyRoc20: spyBar ? spyBar.roc20 : 0
+  };
+}
+
+/**
  * Prepares enriched bar maps and aligned trading timeline across the asset universe.
  */
 export function prepareEnrichedUniverse(rawMarketData) {
@@ -75,6 +92,7 @@ export function runArenaSimulation(rawMarketData, options = {}) {
     Array.isArray(options.enabledSymbols) && options.enabledSymbols.length > 0
       ? new Set(options.enabledSymbols)
       : null;
+  const isCustomSubset = enabledSet && ASSET_UNIVERSE.some((a) => !enabledSet.has(a.symbol));
 
   const { enrichedBySymbol, barBySymbolAndDate } = prepareEnrichedUniverse(rawMarketData);
 
@@ -98,7 +116,7 @@ export function runArenaSimulation(rawMarketData, options = {}) {
     return true;
   });
 
-  if (broad && (marketFilter === 'all' || !marketFilter)) {
+  if (broad && !isCustomSubset && (marketFilter === 'all' || !marketFilter)) {
     for (const a of broad.assets) {
       if (!eligibleAssets.some((x) => x.symbol === a.symbol)) eligibleAssets.push(a);
     }
@@ -179,22 +197,20 @@ export function runArenaSimulation(rawMarketData, options = {}) {
       }
     }
 
+    let lastSpyBar =
+      (enrichedBySymbol[BENCHMARK_SYMBOL] || [])
+        .filter((b) => b.date <= timelineDates[0])
+        .at(-1) || null;
+
     for (let dayIdx = 0; dayIdx < timelineDates.length; dayIdx++) {
       const date = timelineDates[dayIdx];
-      const spyBar = barBySymbolAndDate[BENCHMARK_SYMBOL]?.get(date);
-      const regime = {
-        spyBullish: spyBar
-          ? spyBar.close >= spyBar.sma50 * 0.99 && spyBar.sma20 >= spyBar.sma50 * 0.985
-          : true,
-        spyShortTermBull: spyBar
-          ? spyBar.close >= spyBar.sma20 * 0.99 || spyBar.ema8 >= spyBar.ema21
-          : true,
-        spyRsi: spyBar ? spyBar.rsi14 : 50,
-        spyRoc10: spyBar ? spyBar.roc10 : 0,
-        spyRoc20: spyBar ? spyBar.roc20 : 0
-      };
+      const spyBarToday = barBySymbolAndDate[BENCHMARK_SYMBOL]?.get(date);
+      if (spyBarToday) lastSpyBar = spyBarToday;
+      const regime = buildRegime(spyBarToday || lastSpyBar);
 
-      // Update last known prices & increment holding days
+      const tradingOpen = !tradeFromDate || date >= tradeFromDate;
+
+      // Update last known prices & increment holding days only when trading is active
       for (const asset of eligibleAssets) {
         const bar = barBySymbolAndDate[asset.symbol]?.get(date);
         if (bar) {
@@ -202,17 +218,17 @@ export function runArenaSimulation(rawMarketData, options = {}) {
         }
         const pos = openPositions.get(asset.symbol);
         if (pos && bar) {
-          pos.barsHeld += 1;
+          if (tradingOpen) pos.barsHeld += 1;
           pos.currentPrice = bar.close;
-          pos.highestPrice = Math.max(pos.highestPrice, bar.high || bar.close);
+          if (!tradingOpen) {
+            pos.highestPrice = Math.max(pos.highestPrice, bar.high || bar.close);
+          }
         } else if (pos && lastKnownClose[asset.symbol]) {
           pos.currentPrice = lastKnownClose[asset.symbol];
         }
       }
 
-      const tradingOpen = !tradeFromDate || date >= tradeFromDate;
-
-      // STEP 1: Evaluate EXITS on currently held positions
+      // STEP 1: Evaluate EXITS on currently held positions (strictly before updating highestPrice with today's bar.high)
       for (const [symbol, pos] of tradingOpen ? Array.from(openPositions.entries()) : []) {
         const bar = barBySymbolAndDate[symbol]?.get(date);
         if (!bar) continue;
@@ -303,6 +319,8 @@ export function runArenaSimulation(rawMarketData, options = {}) {
             reasonZh: decision.reasonZh,
             reasonEn: decision.reasonEn
           });
+        } else {
+          pos.highestPrice = Math.max(pos.highestPrice, bar.high || bar.close);
         }
       }
 
@@ -312,7 +330,7 @@ export function runArenaSimulation(rawMarketData, options = {}) {
         for (const asset of eligibleAssets) {
           if (openPositions.has(asset.symbol)) continue;
           const cd = cooldownUntilDayIdx.get(asset.symbol);
-          if (cd !== undefined && dayIdx <= cd) continue;
+          if (cd !== undefined && dayIdx < cd) continue;
 
           const bar = barBySymbolAndDate[asset.symbol]?.get(date);
           if (!bar) continue;
@@ -344,13 +362,12 @@ export function runArenaSimulation(rawMarketData, options = {}) {
           if (targetDollar < currentTotalEquity * 0.06 || targetDollar < 500) continue;
 
           const entryPrice = cand.bar.close;
+          const step = cand.asset.lotStep || 1;
           const rawShares = targetDollar / (entryPrice * (1 + feeRate));
           const shares =
-            cand.asset.category === 'crypto'
-              ? Math.floor(rawShares * 1000) / 1000
-              : cand.asset.category === 'commodity'
-                ? Math.floor(rawShares * 10) / 10
-                : Math.max(1, Math.floor(rawShares));
+            step >= 1
+              ? Math.floor(rawShares)
+              : Math.round(Math.floor(rawShares / step) * step * 1e6) / 1e6;
 
           const grossCost = shares * entryPrice;
           const entryFee = grossCost * feeRate;
@@ -367,7 +384,7 @@ export function runArenaSimulation(rawMarketData, options = {}) {
             entryDate: date,
             entryPrice,
             currentPrice: entryPrice,
-            highestPrice: cand.bar.high || entryPrice,
+            highestPrice: entryPrice,
             shares,
             costBasis: totalCost,
             entryFee,
@@ -626,12 +643,7 @@ export function runArenaSimulation(rawMarketData, options = {}) {
       if (!latestBar) return null;
 
       const spyLatest = enrichedBySymbol[BENCHMARK_SYMBOL]?.at(-1);
-      const regime = {
-        spyBullish: spyLatest ? spyLatest.close >= spyLatest.sma50 * 0.985 : true,
-        spyShortTermBull: spyLatest
-          ? spyLatest.close >= spyLatest.sma20 * 0.99 || spyLatest.ema8 >= spyLatest.ema21
-          : true
-      };
+      const regime = buildRegime(spyLatest);
 
       const signalsByTrader = {};
       for (const trResult of traderResults) {
@@ -812,12 +824,7 @@ function computeTop5PromisingAssets(
     const spyBars = enrichedBySymbol[BENCHMARK_SYMBOL] || [];
     const spyRefBar =
       spyBars.find((b) => b.date === r.date) || spyBars.at(-1);
-    const regime = {
-      spyBullish: spyRefBar ? spyRefBar.close >= spyRefBar.sma50 * 0.985 : true,
-      spyShortTermBull: spyRefBar
-        ? spyRefBar.close >= spyRefBar.sma20 * 0.99 || spyRefBar.ema8 >= spyRefBar.ema21
-        : true
-    };
+    const regime = buildRegime(spyRefBar);
 
     // Evaluate all 3 AI Traders on this external stock's evaluation bar
     const signalsByTrader = {};
@@ -892,7 +899,7 @@ function computeTop5PromisingAssets(
     }
     if (r.close > r.sma50 && r.sma50SlopePct > 0) {
       catalystsZh.push(
-        `中長線多頭排列：股價 ($${r.close.toFixed(2)}) 站穩上揚 50日生命線 ($${r.sma50.toFixed(2)}，斜率 +${r.sma50SlopePct.toFixed(2)}%)，近 20 日動能 ${r.roc20 >= 0 ? '+' : ''}${r.roc20.toFixed(1)}%`
+        `中長線多頭排列：股價 (NT$${r.close.toFixed(2)}) 站穩上揚 50日生命線 (NT$${r.sma50.toFixed(2)}，斜率 +${r.sma50SlopePct.toFixed(2)}%)，近 20 日動能 ${r.roc20 >= 0 ? '+' : ''}${r.roc20.toFixed(1)}%`
       );
     } else if (r.zScore20 <= -0.8) {
       catalystsZh.push(
@@ -905,11 +912,11 @@ function computeTop5PromisingAssets(
     }
     if (bullishTraders.length > 0) {
       catalystsZh.push(
-        `AI 週一選股共識：獲 ${bullishTraders.join('、')} AI 點名列為清單外高勝率潛力美股`
+        `AI 週一選股共識：獲 ${bullishTraders.join('、')} AI 點名列為清單外高勝率潛力台股`
       );
     } else {
       catalystsZh.push(
-        `突破觸發預警：站上 EMA8 ($${r.ema8.toFixed(2)}) 將同步點燃動能與多因子買進訊號`
+        `突破觸發預警：站上 EMA8 (NT$${r.ema8.toFixed(2)}) 將同步點燃動能與多因子買進訊號`
       );
     }
 
@@ -1008,8 +1015,8 @@ function computeNextEntryWatchlist(latestRadar, traderResults) {
         triggerTypeZh = sig.action === 'BUY' ? '🟢 已達抄底買點' : '🎯 回測支撐低接價';
         triggerConditionZh =
           sig.action === 'BUY'
-            ? `現價 $${r.close.toFixed(2)} 已進入布林支撐超賣區（Z=${r.zScore20.toFixed(2)}），符合逢低買進條件`
-            : `若股價回測至 $${triggerPrice.toFixed(2)}（距現價 ${diffPct.toFixed(1)}%）且守穩 SMA50 ($${r.sma50.toFixed(2)}) 即觸發買進`;
+            ? `現價 NT$${r.close.toFixed(2)} 已進入布林支撐超賣區（Z=${r.zScore20.toFixed(2)}），符合逢低買進條件`
+            : `若股價回測至 NT$${triggerPrice.toFixed(2)}（距現價 ${diffPct.toFixed(1)}%）且守穩 SMA50 (NT$${r.sma50.toFixed(2)}) 即觸發買進`;
       } else if (tr.trader.id === 'alpha-momentum') {
         // Alpha buys momentum breakout above EMA8 / EMA21
         const targetBreakout = Math.max(r.close * 1.006, r.ema8 * 1.002, r.ema21 * 1.005);
@@ -1018,8 +1025,8 @@ function computeNextEntryWatchlist(latestRadar, traderResults) {
         triggerTypeZh = sig.action === 'BUY' ? '🟢 已達突破買點' : '⚡ 帶量突破追價點';
         triggerConditionZh =
           sig.action === 'BUY'
-            ? `現價 $${r.close.toFixed(2)} 已站上均線多頭排列且動能達標，立即可順勢建倉`
-            : `若股價帶量突破 $${triggerPrice.toFixed(2)}（+${Math.abs(diffPct).toFixed(1)}%）站穩 EMA8/21 與 SMA50 即觸發追價買點`;
+            ? `現價 NT$${r.close.toFixed(2)} 已站上均線多頭排列且動能達標，立即可順勢建倉`
+            : `若股價帶量突破 NT$${triggerPrice.toFixed(2)}（+${Math.abs(diffPct).toFixed(1)}%）站穩 EMA8/21 與 SMA50 即觸發追價買點`;
       } else {
         // Titan buys risk-parity multi-factor setup
         const targetEntry = r.close >= r.sma50 ? r.close * 0.995 : r.sma50 * 1.005;
@@ -1028,8 +1035,8 @@ function computeNextEntryWatchlist(latestRadar, traderResults) {
         triggerTypeZh = sig.action === 'BUY' ? '🟢 已達建倉門檻' : '🛡️ 因子共振建倉價';
         triggerConditionZh =
           sig.action === 'BUY'
-            ? `多因子評分已跨越 72 分門檻，符合 25% 機構核心倉位建倉條件`
-            : `站穩 $${triggerPrice.toFixed(2)}（距現價 ${diffPct >= 0 ? '+' : ''}${diffPct.toFixed(1)}%）且季線斜率轉強時觸發核心建倉`;
+            ? `多因子評分已跨越 72 分門檻，符合機構核心倉位建倉條件`
+            : `站穩 NT$${triggerPrice.toFixed(2)}（距現價 ${diffPct >= 0 ? '+' : ''}${diffPct.toFixed(1)}%）且季線斜率轉強時觸發核心建倉`;
       }
 
       watchlist.push({
@@ -1128,18 +1135,30 @@ function computeDailyBriefing({
  * Runs a focused Single-Asset K-Line Simulation for a selected ticker & AI trader
  * so the user can inspect every exact BUY/SELL arrow on the candlestick chart.
  */
-export function runSingleAssetSimulation(rawMarketData, symbol, traderId, periodDays = 60) {
-  const symbolData = rawMarketData.symbols?.[symbol];
+export function runSingleAssetSimulation(
+  rawMarketData,
+  symbol,
+  traderId,
+  periodDays = 60,
+  options = {}
+) {
+  const broad = expandBroad(options.broadData);
+  const symbolsMap = broad
+    ? { ...broad.symbols, ...(rawMarketData.symbols || {}) }
+    : rawMarketData.symbols || {};
+  const symbolData = symbolsMap[symbol];
   if (!symbolData || !symbolData.bars || !symbolData.bars.length) {
     return null;
   }
 
+  const feeRate = Number(options.feeRate ?? 0.0022);
   const allBars = enrichBarsWithIndicators(symbolData.bars);
   const startIdx = Math.max(0, allBars.length - periodDays);
   const windowBars = allBars.slice(startIdx);
 
-  const spyBars = enrichBarsWithIndicators(rawMarketData.symbols?.[BENCHMARK_SYMBOL]?.bars || []);
+  const spyBars = enrichBarsWithIndicators(symbolsMap[BENCHMARK_SYMBOL]?.bars || []);
   const spyMap = new Map(spyBars.map((b) => [b.date, b]));
+  let lastSpyBar = spyBars.filter((b) => b.date <= (windowBars[0]?.date || '')).at(-1) || null;
 
   let position = null;
   let cooldownUntil = -1;
@@ -1148,27 +1167,22 @@ export function runSingleAssetSimulation(rawMarketData, symbol, traderId, period
 
   for (let i = 0; i < windowBars.length; i++) {
     const bar = windowBars[i];
-    const spyBar = spyMap.get(bar.date);
-    const regime = {
-      spyBullish: spyBar ? spyBar.close >= spyBar.sma50 * 0.985 : true,
-      spyShortTermBull: spyBar
-        ? spyBar.close >= spyBar.sma20 * 0.99 || spyBar.ema8 >= spyBar.ema21
-        : true
-    };
+    const spyBarToday = spyMap.get(bar.date);
+    if (spyBarToday) lastSpyBar = spyBarToday;
+    const regime = buildRegime(spyBarToday || lastSpyBar);
 
     if (position) {
       position.barsHeld += 1;
-      position.highestPrice = Math.max(position.highestPrice, bar.high || bar.close);
     }
 
     const decision = evaluateTraderSignal(traderId, bar, position, regime);
 
-    if (!position && i > cooldownUntil && decision.action === 'BUY') {
+    if (!position && i >= cooldownUntil && decision.action === 'BUY') {
       position = {
         entryIndex: i,
         entryDate: bar.date,
         entryPrice: bar.close,
-        highestPrice: bar.high || bar.close,
+        highestPrice: bar.close,
         barsHeld: 0,
         stopLoss: decision.stopLossPrice || bar.close * 0.958,
         takeProfit: decision.takeProfitPrice || bar.close * 1.15,
@@ -1190,7 +1204,9 @@ export function runSingleAssetSimulation(rawMarketData, symbol, traderId, period
         reasonEn: decision.reasonEn
       });
     } else if (position && decision.action === 'SELL') {
-      const pnlPct = ((bar.close - position.entryPrice) / position.entryPrice) * 100;
+      const netExit = bar.close * (1 - feeRate);
+      const netEntry = position.entryPrice * (1 + feeRate);
+      const pnlPct = ((netExit - netEntry) / netEntry) * 100;
       markers.push({
         index: i,
         date: bar.date,
@@ -1219,6 +1235,8 @@ export function runSingleAssetSimulation(rawMarketData, symbol, traderId, period
       });
       position = null;
       cooldownUntil = i + 2;
+    } else if (position) {
+      position.highestPrice = Math.max(position.highestPrice, bar.high || bar.close);
     }
   }
 
