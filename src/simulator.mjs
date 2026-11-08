@@ -20,10 +20,48 @@ export function buildRegime(spyBar) {
     spyShortTermBull: spyBar
       ? spyBar.close >= spyBar.sma20 * 0.99 || spyBar.ema8 >= spyBar.ema21
       : true,
+    spyStrictBull: spyBar
+      ? spyBar.close >= spyBar.sma20 && spyBar.ema8 >= spyBar.ema21 && spyBar.roc5 >= 0
+      : true,
     spyRsi: spyBar ? spyBar.rsi14 : 50,
     spyRoc10: spyBar ? spyBar.roc10 : 0,
     spyRoc20: spyBar ? spyBar.roc20 : 0
   };
+}
+
+/**
+ * Core-Satellite 3+1 eligibility gate for Broad universe stocks.
+ * Prevents high-beta mid/small-cap satellites from displacing Core 20 TWSE leaders
+ * or triggering contrarian mean-reversion knife-catches.
+ */
+export function isSatelliteEligible(asset, bar, regime, traderId) {
+  if (!asset?.isBroad) return true;
+  if (traderId === 'sigma-reversion') return false;
+  if (!regime?.spyStrictBull || (regime?.spyRoc10 ?? 0) < 1.2 || (regime?.spyRoc20 ?? 0) < 2.0) {
+    return false;
+  }
+  if (
+    bar.atrPct > 3.2 ||
+    bar.sma50SlopePct < 0.45 ||
+    bar.roc20 < 9.0 ||
+    bar.roc10 < 2.0 ||
+    bar.close <= bar.sma50 * 1.02
+  ) {
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Quality filter for external Top 5 Promising stock forecast (independent of 0050 short-term regime).
+ */
+export function isExternalWatchlistEligible(bar) {
+  return (
+    bar.atrPct <= 3.5 &&
+    bar.sma50SlopePct >= 0.35 &&
+    bar.roc20 >= 6.0 &&
+    bar.close > bar.sma50
+  );
 }
 
 /**
@@ -245,7 +283,7 @@ export function runArenaSimulation(rawMarketData, options = {}) {
           cash += netProceeds;
           openPositions.delete(symbol);
           // Prevent same-day or next-day whipsaw re-entry on the same ticker
-          cooldownUntilDayIdx.set(symbol, dayIdx + 2);
+          cooldownUntilDayIdx.set(symbol, (bar.barIndex ?? dayIdx) + 2);
 
           const meta = getAssetMeta(symbol);
           const tradeRecord = {
@@ -326,21 +364,30 @@ export function runArenaSimulation(rawMarketData, options = {}) {
 
       // STEP 2: Evaluate ENTRIES across eligible assets not currently in portfolio
       if (tradingOpen && openPositions.size < trader.maxPositions) {
+        let openBroadCount = 0;
+        for (const p of openPositions.values()) {
+          if (p.isBroad) openBroadCount += 1;
+        }
+
         const candidates = [];
         for (const asset of eligibleAssets) {
           if (openPositions.has(asset.symbol)) continue;
-          const cd = cooldownUntilDayIdx.get(asset.symbol);
-          if (cd !== undefined && dayIdx < cd) continue;
+          if (asset.isBroad && openBroadCount >= 1) continue;
 
           const bar = barBySymbolAndDate[asset.symbol]?.get(date);
           if (!bar) continue;
 
+          const cd = cooldownUntilDayIdx.get(asset.symbol);
+          if (cd !== undefined && (bar.barIndex ?? dayIdx) < cd) continue;
+          if (!isSatelliteEligible(asset, bar, regime, trader.id)) continue;
+
           const decision = evaluateTraderSignal(trader.id, bar, null, regime);
           if (decision.action === 'BUY') {
+            const adjConviction = asset.isBroad ? decision.conviction - 20 : decision.conviction;
             candidates.push({
               asset,
               bar,
-              decision
+              decision: { ...decision, conviction: adjConviction }
             });
           }
         }
@@ -356,8 +403,10 @@ export function runArenaSimulation(rawMarketData, options = {}) {
 
         for (const cand of candidates) {
           if (openPositions.size >= trader.maxPositions) break;
+          if (cand.asset.isBroad && openBroadCount >= 1) continue;
 
-          const allocPct = cand.decision.allocationPct || trader.baseAllocation;
+          let allocPct = cand.decision.allocationPct || trader.baseAllocation;
+          if (cand.asset.isBroad) allocPct = Math.min(allocPct, 0.18);
           const targetDollar = Math.min(cash * 0.96, currentTotalEquity * allocPct);
           if (targetDollar < currentTotalEquity * 0.06 || targetDollar < 500) continue;
 
@@ -376,8 +425,10 @@ export function runArenaSimulation(rawMarketData, options = {}) {
           if (shares <= 0 || totalCost > cash) continue;
 
           cash -= totalCost;
+          if (cand.asset.isBroad) openBroadCount += 1;
           openPositions.set(cand.asset.symbol, {
             symbol: cand.asset.symbol,
+            isBroad: !!cand.asset.isBroad,
             displayTicker: cand.asset.displayTicker || cand.asset.symbol,
             assetNameZh: cand.asset.nameZh,
             category: cand.asset.category,
@@ -648,16 +699,29 @@ export function runArenaSimulation(rawMarketData, options = {}) {
       const signalsByTrader = {};
       for (const trResult of traderResults) {
         const openPos = trResult.activePositions.find((p) => p.symbol === asset.symbol) || null;
-        signalsByTrader[trResult.trader.id] = evaluateTraderSignal(
+        let sig = evaluateTraderSignal(
           trResult.trader.id,
           latestBar,
           openPos,
           regime
         );
+        if (!openPos && asset.isBroad) {
+          if (!isSatelliteEligible(asset, latestBar, regime, trResult.trader.id)) {
+            sig = {
+              ...sig,
+              action: 'WAIT',
+              conviction: Math.min(55, sig.conviction || 45)
+            };
+          } else if (sig.action === 'BUY') {
+            sig = { ...sig, conviction: Math.max(50, sig.conviction - 20) };
+          }
+        }
+        signalsByTrader[trResult.trader.id] = sig;
       }
 
       return {
         symbol: asset.symbol,
+        isBroad: !!asset.isBroad,
         displayTicker: asset.displayTicker || asset.symbol,
         name: asset.name,
         nameZh: asset.nameZh,
@@ -795,15 +859,22 @@ function computeTop5PromisingAssets(
 ) {
   const activeSymbolsSet = new Set([
     ...ASSET_UNIVERSE.map((a) => a.symbol),
-    ...eligibleAssets.map((a) => a.symbol)
+    ...eligibleAssets.filter((a) => !a.isBroad).map((a) => a.symbol)
   ]);
 
   const { weekMondayDate, nextMondayDate } = getWeeklyMondaySchedule(endDateStr);
 
-  // Strictly filter to external discovery US stocks NOT in the current watchlist
-  const externalCandidates = DISCOVERY_CANDIDATE_UNIVERSE.filter(
+  // Strictly filter to external discovery TW stocks NOT in the current core watchlist
+  const baseDiscovery = DISCOVERY_CANDIDATE_UNIVERSE.filter(
     (c) => !activeSymbolsSet.has(c.symbol) && (enrichedBySymbol[c.symbol] || []).length > 0
   );
+  const discoverySymbols = new Set(baseDiscovery.map((c) => c.symbol));
+  const broadDiscovery = eligibleAssets.filter((a) => {
+    if (!a.isBroad || activeSymbolsSet.has(a.symbol) || discoverySymbols.has(a.symbol)) return false;
+    const latest = (enrichedBySymbol[a.symbol] || []).at(-1);
+    return latest && isExternalWatchlistEligible(latest);
+  });
+  const externalCandidates = [...baseDiscovery, ...broadDiscovery];
 
   let anchorTradingDate = weekMondayDate;
 
@@ -989,6 +1060,7 @@ function computeNextEntryWatchlist(latestRadar, traderResults) {
   for (const r of latestRadar) {
     // Evaluate each trader that is NOT currently holding this asset
     for (const tr of traderResults) {
+      if (r.isBroad && tr.trader.id === 'sigma-reversion') continue;
       const isHeld = tr.activePositions.some((p) => p.symbol === r.symbol);
       if (isHeld) continue;
 

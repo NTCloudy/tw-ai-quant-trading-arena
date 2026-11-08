@@ -183,10 +183,15 @@ function evalAlphaMomentum(bar, position, regime = { spyBullish: true }) {
   if (rsi14 >= 48 && rsi14 <= 70 && rsi14 >= prevRsi14 - 1) score += 10;
   if (regime?.spyShortTermBull !== false) score += 5;
 
+  const headwindOk =
+    regime?.spyShortTermBull !== false ||
+    (sma50SlopePct >= 0.45 && roc20 >= 10.0 && roc5 >= 0.5);
+
   if (
     structuralUptrend &&
     emaBullish &&
     macdBullish &&
+    headwindOk &&
     roc20 >= 6.0 &&
     atrPct <= 8.5 &&
     zScore20 <= 1.5 &&
@@ -380,6 +385,7 @@ function evalTitanMultiFactor(bar, position, regime = { spyBullish: true }) {
     bbUpper,
     bbPercentB,
     zScore20,
+    roc5,
     roc10,
     roc20,
     atrPct
@@ -451,8 +457,13 @@ function evalTitanMultiFactor(bar, position, regime = { spyBullish: true }) {
   }
 
   // Entry evaluation: require rising structural trend + high Sharpe momentum + True Risk-Parity sizing
+  const headwindOk =
+    regime?.spyShortTermBull !== false ||
+    (sma50SlopePct >= 0.35 && sharpeMomentum >= 1.5 && roc5 >= -0.5);
+
   if (
     structuralUptrend &&
+    headwindOk &&
     roc20 >= 4.6 &&
     atrPct <= 8.5 &&
     compositeScore >= 72 &&
