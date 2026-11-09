@@ -1,5 +1,48 @@
 [
   {
+    "syncedAt": "2026-11-09T16:26:37.743Z",
+    "latestTradingDate": "2026-11-06",
+    "marketDate": "2026-11-06",
+    "trigger": "schedule",
+    "runNumber": 31,
+    "etf0050Close": 97.45,
+    "tsmc2330Close": 2235,
+    "benchmark1MReturnPct": -20.6,
+    "champion30d": {
+      "traderId": "alpha-momentum",
+      "traderName": "Alpha 動能突破型 AI",
+      "returnPct": -8.69,
+      "equity": 913057.75
+    },
+    "leader1M": {
+      "id": "alpha-momentum",
+      "nameZh": "Alpha 動能突破型 AI",
+      "returnPct": -8.69,
+      "equity": 913057.75
+    },
+    "traders1M": {
+      "alpha-momentum": {
+        "returnPct": -8.69,
+        "equity": 913057.75,
+        "openPositions": []
+      },
+      "sigma-reversion": {
+        "returnPct": -16.02,
+        "equity": 839771.56,
+        "openPositions": [
+          "2603"
+        ]
+      },
+      "titan-multifactor": {
+        "returnPct": -15.4,
+        "equity": 845991.5,
+        "openPositions": [
+          "2603"
+        ]
+      }
+    }
+  },
+  {
     "syncedAt": "2026-11-09T06:59:21.094Z",
     "latestTradingDate": "2026-11-09",
     "marketDate": "2026-11-09",
@@ -38,47 +81,6 @@
         "equity": 893893.85,
         "openPositions": [
           "2603"
-        ]
-      }
-    }
-  },
-  {
-    "syncedAt": "2026-11-07T08:29:41.809Z",
-    "latestTradingDate": "2026-11-06",
-    "marketDate": "2026-11-06",
-    "trigger": "workflow_dispatch",
-    "runNumber": 27,
-    "etf0050Close": 92.5,
-    "tsmc2330Close": 2135,
-    "benchmark1MReturnPct": -20.77,
-    "champion30d": {
-      "traderId": "sigma-reversion",
-      "traderName": "Sigma 波段抄底型 AI",
-      "returnPct": -2.82,
-      "equity": 971756.04
-    },
-    "leader1M": {
-      "id": "sigma-reversion",
-      "nameZh": "Sigma 波段抄底型 AI",
-      "returnPct": -2.82,
-      "equity": 971756.04
-    },
-    "traders1M": {
-      "alpha-momentum": {
-        "returnPct": -6.06,
-        "equity": 939447.6,
-        "openPositions": []
-      },
-      "sigma-reversion": {
-        "returnPct": -2.82,
-        "equity": 971756.04,
-        "openPositions": []
-      },
-      "titan-multifactor": {
-        "returnPct": -6.89,
-        "equity": 931101.14,
-        "openPositions": [
-          "2881"
         ]
       }
     }
