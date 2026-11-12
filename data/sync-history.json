@@ -1,5 +1,48 @@
 [
   {
+    "syncedAt": "2026-11-12T15:19:25.696Z",
+    "latestTradingDate": "2026-11-12",
+    "marketDate": "2026-11-12",
+    "trigger": "schedule",
+    "runNumber": 34,
+    "etf0050Close": 100.95,
+    "tsmc2330Close": 2340,
+    "benchmark1MReturnPct": -10.19,
+    "champion30d": {
+      "traderId": "alpha-momentum",
+      "traderName": "Alpha 動能突破型 AI",
+      "returnPct": -6.07,
+      "equity": 939285
+    },
+    "leader1M": {
+      "id": "alpha-momentum",
+      "nameZh": "Alpha 動能突破型 AI",
+      "returnPct": -6.07,
+      "equity": 939285
+    },
+    "traders1M": {
+      "alpha-momentum": {
+        "returnPct": -6.07,
+        "equity": 939285,
+        "openPositions": []
+      },
+      "sigma-reversion": {
+        "returnPct": -10.48,
+        "equity": 895222.62,
+        "openPositions": [
+          "2603"
+        ]
+      },
+      "titan-multifactor": {
+        "returnPct": -8.47,
+        "equity": 915299.74,
+        "openPositions": [
+          "2603"
+        ]
+      }
+    }
+  },
+  {
     "syncedAt": "2026-11-11T14:27:01.982Z",
     "latestTradingDate": "2026-11-11",
     "marketDate": "2026-11-11",
