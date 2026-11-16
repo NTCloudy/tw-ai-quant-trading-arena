@@ -1,10 +1,10 @@
 [
   {
-    "syncedAt": "2026-11-16T07:00:54.220Z",
+    "syncedAt": "2026-11-16T15:51:35.741Z",
     "latestTradingDate": "2026-11-16",
     "marketDate": "2026-11-16",
     "trigger": "schedule",
-    "runNumber": 36,
+    "runNumber": 37,
     "etf0050Close": 96.45,
     "tsmc2330Close": 2215,
     "benchmark1MReturnPct": -11.43,
